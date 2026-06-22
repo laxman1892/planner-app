@@ -1,0 +1,23 @@
+{
+  "name": "collaborative-planner-social-challenges",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint . --ext .js,.jsx",
+    "test": "node --test --test-isolation=none lib/errors.test.js lib/formatters.test.js lib/session/token-storage.test.js components/auth/auth-screen-content.test.js components/layout/sidebar-navigation.test.js"
+  },
+  "dependencies": {
+    "lucide-react": "^0.468.0",
+    "next": "^15.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "eslint-config-next": "^16.2.9"
+  }
+}
