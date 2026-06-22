@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --ext .js,.jsx",
-    "test": "node --test --test-isolation=none lib/errors.test.js lib/formatters.test.js lib/session/token-storage.test.js components/auth/auth-screen-content.test.js components/layout/sidebar-navigation.test.js"
+    "test": "node --test --experimental-test-isolation=none lib/errors.test.js lib/formatters.test.js lib/session/token-storage.test.js components/auth/auth-screen-content.test.js components/layout/sidebar-navigation.test.js"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
