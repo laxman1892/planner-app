@@ -1,6 +1,6 @@
-# PlanQuest: Planner-First Collaborative Accountability
+# PlanQuest: Gamified Productivity Growth System
 
-PlanQuest is a fullstack portfolio app built around personal planning and lightweight accountability. The current implementation is strongest at auth, personal event management, self-challenge tracking, progress logging, and achievement badges, while collaborative planning remains the intended direction rather than a fully completed product flow today.
+PlanQuest is a fullstack portfolio app built around event quests, challenges, progression, and collaboration. The current implementation now includes the renewed auth flow, dashboard command center, dedicated challenge creation route, profile progression surface, invitation-driven collaboration, and the first notification/reminder slice.
 
 ## Tech Stack
 
@@ -10,21 +10,28 @@ PlanQuest is a fullstack portfolio app built around personal planning and lightw
 - Auth: Email-based custom user model with JWT
 - Media: Local profile picture uploads during development
 
-## Current Phase 1 Scope
+## Current Renewal Scope
 
 - Register and log in with JWT auth
+- Use the renewed two-panel login and register experience
 - Retrieve and update the authenticated user profile through the backend API
-- Create, edit, list, and delete your own planner events
-- Create your own challenges, log progress, and complete them
+- Create, edit, complete, list, and delete event quests
+- Invite collaborators into event quests and manage invitation response flow
+- Create your own challenges from a dedicated challenge route, log progress, and complete them
 - Earn and list achievement badges tied to challenge activity
+- View dashboard command-center summaries for focus, XP, and deadlines
+- View in-app notifications
+- Store notification preferences
+- View profile progression summary and lightweight squad members
+- Generate email and in-app reminders
 
 ## Current Product Posture
 
-PlanQuest should currently be described as a planner-first collaborative accountability app.
+PlanQuest should currently be described as a gamified productivity growth system with planner and collaboration support.
 
-- Core loop: manage upcoming plans and stay accountable through challenge progress.
-- Supporting systems: achievements and challenge streaks.
-- Deferred from product claims: fully realized shared events, invitation workflows in the frontend, and group challenges as a polished user-facing feature.
+- Core loop: manage event quests, keep challenge momentum alive, and respond to reminders and collaboration signals.
+- Supporting systems: achievements, progression, and notifications.
+- Deferred from product claims: OAuth, full social graph behavior, collaborative challenges as a polished user-facing feature, broad live XP economy wiring, and real-time systems.
 
 ## Project Structure
 
@@ -35,6 +42,8 @@ backend/
     planner/
     challenges/
     achievements/
+    notifications/
+    progression/
   config/
 frontend/
   app/
@@ -72,22 +81,34 @@ The Next.js app expects the backend API at `http://localhost:8000/api` by defaul
 - `GET /api/auth/me/`
 - `GET|POST /api/events/`
 - `GET|POST /api/event-participants/`
+- `GET|POST /api/event-invitations/`
 - `GET|POST /api/challenges/`
 - `POST /api/challenges/{id}/complete/`
 - `GET|POST /api/progress/`
 - `GET /api/achievements/`
+- `GET /api/progression/me/`
+- `GET|PATCH /api/notifications/`
+- `GET|PATCH /api/notification-preferences/me/`
 
-`/api/event-participants/` exists as backend collaboration scaffolding, but the main event flow is still creator-centric because event listing and editing remain owner-only.
+`/api/event-participants/` and `/api/event-invitations/` support invitation preview and response flow. Notifications and reminders now sit beside that invitation flow as the first retention and collaboration system.
 
 ## Architecture Notes
 
 - Product direction: [docs/architecture/planquest-product-direction.md](/C:/Users/laxman/Documents/planner-app/docs/architecture/planquest-product-direction.md)
 - User journeys: [docs/architecture/planquest-user-journeys.md](/C:/Users/laxman/Documents/planner-app/docs/architecture/planquest-user-journeys.md)
 - Domain rules: [docs/architecture/planquest-domain-rules.md](/C:/Users/laxman/Documents/planner-app/docs/architecture/planquest-domain-rules.md)
+- Notifications and reminders: [docs/architecture/notifications-and-reminders.md](/C:/Users/laxman/Documents/planner-app/docs/architecture/notifications-and-reminders.md)
+- Progression and reward rules: [docs/architecture/progression-and-reward-rules.md](/C:/Users/laxman/Documents/planner-app/docs/architecture/progression-and-reward-rules.md)
+- Renewal status report: [docs/architecture/gamified-renewal-status-report.md](/C:/Users/laxman/Documents/planner-app/docs/architecture/gamified-renewal-status-report.md)
 
-## Next Build Step
+## Notification Jobs
 
-Harden the collaboration slice so invitation state, shared event visibility, and participant-facing UI are as real as the existing personal planning flows.
+Run this locally to generate due reminders and send pending emails:
+
+```bash
+cd backend
+.venv\Scripts\python.exe manage.py run_notification_jobs
+```
 
 ## Local Quality Gates
 
