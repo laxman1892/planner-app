@@ -2,19 +2,19 @@ export const authPreviewItems = [
   {
     key: "streak",
     icon: "sparkles",
-    label: "Challenge streak",
-    value: "5 days",
+    label: "Active streak",
+    value: "5 days strong",
   },
   {
     key: "plan",
     icon: "calendar",
-    label: "Next shared plan",
-    value: "Design review",
+    label: "Next quest",
+    value: "Design review at 10:30",
   },
   {
     key: "badge",
     icon: "medal",
-    label: "Latest badge",
+    label: "Latest achievement",
     value: "Planner Starter",
   },
 ];
@@ -34,5 +34,5 @@ export function createAuthPreviewIcons(iconComponents) {
 }
 
 export function getAuthHeading(mode) {
-  return mode === "login" ? "Log in to your planner" : "Create your planner profile";
+  return mode === "login" ? "Welcome back, adventurer" : "Create an account";
 }

@@ -21,7 +21,12 @@ export default function ChallengeCard({
       </div>
       <div className="challenge-meta">
         <span>{challenge.is_completed ? "Complete" : "Active"}</span>
+        {challenge.streak_goal_days ? <span>{challenge.streak_goal_days} day goal</span> : null}
+        {challenge.reward_preview_xp ? <span>+{challenge.reward_preview_xp} XP</span> : null}
         <span>{challenge.progress_logs?.length ?? 0} logs</span>
+        {(challenge.category_tags ?? []).map((tag) => (
+          <span key={tag}>{tag}</span>
+        ))}
       </div>
       {!challenge.is_completed && (
         <ProgressForm

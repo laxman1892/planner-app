@@ -51,7 +51,6 @@ export function useAuthenticatedUserSession() {
 
   function handleLogout() {
     clearUserSession();
-    window.location.reload();
   }
 
   return {

@@ -36,3 +36,47 @@ export async function authenticatedRequest(path, accessToken, options = {}) {
 
   return parseResponse(response);
 }
+
+export function listEventInvitations(accessToken) {
+  return authenticatedRequest("/event-invitations/", accessToken);
+}
+
+export function updateEventInvitation(invitationId, accessToken, status) {
+  return authenticatedRequest(`/event-invitations/${invitationId}/`, accessToken, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+}
+
+export function createEventInvitation(eventId, accessToken, identifier) {
+  return authenticatedRequest("/event-invitations/", accessToken, {
+    method: "POST",
+    body: JSON.stringify({ event: eventId, identifier }),
+  });
+}
+
+export function listNotifications(accessToken) {
+  return authenticatedRequest("/notifications/", accessToken);
+}
+
+export function markNotificationRead(notificationId, accessToken) {
+  return authenticatedRequest(`/notifications/${notificationId}/`, accessToken, {
+    method: "PATCH",
+    body: JSON.stringify({ is_read: true }),
+  });
+}
+
+export function getNotificationPreferences(accessToken) {
+  return authenticatedRequest("/notification-preferences/me/", accessToken);
+}
+
+export function updateNotificationPreferences(accessToken, payload) {
+  return authenticatedRequest("/notification-preferences/me/", accessToken, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function getProgressSummary(accessToken) {
+  return authenticatedRequest("/progression/me/", accessToken);
+}

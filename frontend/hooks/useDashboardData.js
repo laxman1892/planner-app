@@ -2,12 +2,15 @@
 
 import { useState } from "react";
 
-import { authenticatedRequest } from "@/lib/api";
+import { authenticatedRequest, listEventInvitations } from "@/lib/api";
 
 export function useDashboardData() {
   const [events, setEvents] = useState([]);
   const [eventsError, setEventsError] = useState("");
   const [isEventsLoading, setIsEventsLoading] = useState(false);
+  const [invitations, setInvitations] = useState([]);
+  const [invitationsError, setInvitationsError] = useState("");
+  const [isInvitationsLoading, setIsInvitationsLoading] = useState(false);
   const [challenges, setChallenges] = useState([]);
   const [achievements, setAchievements] = useState([]);
   const [achievementsError, setAchievementsError] = useState("");
@@ -26,6 +29,20 @@ export function useDashboardData() {
       setEventsError(eventError.message);
     } finally {
       setIsEventsLoading(false);
+    }
+  }
+
+  async function loadInvitations(accessToken) {
+    setIsInvitationsLoading(true);
+    setInvitationsError("");
+
+    try {
+      const nextInvitations = await listEventInvitations(accessToken);
+      setInvitations(nextInvitations);
+    } catch (invitationError) {
+      setInvitationsError(invitationError.message);
+    } finally {
+      setIsInvitationsLoading(false);
     }
   }
 
@@ -61,6 +78,9 @@ export function useDashboardData() {
     setEvents([]);
     setEventsError("");
     setIsEventsLoading(false);
+    setInvitations([]);
+    setInvitationsError("");
+    setIsInvitationsLoading(false);
     setChallenges([]);
     setAchievements([]);
     setAchievementsError("");
@@ -76,12 +96,16 @@ export function useDashboardData() {
     challengesError,
     events,
     eventsError,
+    invitations,
+    invitationsError,
     isAchievementsLoading,
     isChallengesLoading,
     isEventsLoading,
+    isInvitationsLoading,
     loadAchievements,
     loadChallenges,
     loadEvents,
+    loadInvitations,
     resetDashboardData,
     setAchievementsError,
     setAchievements,
@@ -89,5 +113,7 @@ export function useDashboardData() {
     setChallengesError,
     setEvents,
     setEventsError,
+    setInvitations,
+    setInvitationsError,
   };
 }

@@ -3,7 +3,7 @@
 import { Pencil } from "lucide-react";
 import Sidebar from "@/components/layout/Sidebar";
 
-export default function DashboardShell({ children, overlays, onCreateEvent, showCreateEvent = true }) {
+export default function DashboardShell({ children, overlays, onCreateEvent, showCreateEvent = false }) {
   return (
     <main className="app-shell">
       <Sidebar />
@@ -15,7 +15,7 @@ export default function DashboardShell({ children, overlays, onCreateEvent, show
       {showCreateEvent ? (
         <button type="button" className="fab" onClick={onCreateEvent}>
           <Pencil size={21} />
-          <span>Create</span>
+          <span>New Quest</span>
         </button>
       ) : null}
 

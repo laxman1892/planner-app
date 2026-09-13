@@ -1,3 +1,3 @@
 export default function AuthLayout({ children }) {
-  return children;
+  return <div className="auth-route-shell">{children}</div>;
 }

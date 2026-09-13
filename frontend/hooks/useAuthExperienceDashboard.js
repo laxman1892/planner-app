@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { authenticatedRequest } from "@/lib/api";
+import { authenticatedRequest, createEventInvitation, updateEventInvitation } from "@/lib/api";
 import { toDateTimeLocalValue } from "@/lib/formatters";
 import { useDashboardData } from "@/hooks/useDashboardData";
 
@@ -11,12 +11,16 @@ const initialEvent = {
   description: "",
   starts_at: "",
   category: "personal",
+  quest_mode: "solo",
+  is_completed: false,
 };
 
 const initialChallenge = {
   title: "",
   description: "",
   deadline: "",
+  streak_goal_days: "",
+  category_tags: "",
 };
 
 const initialProgress = {
@@ -32,23 +36,32 @@ export function useAuthExperienceDashboard({ accessToken }) {
     challengesError,
     events,
     eventsError,
+    invitations,
+    invitationsError,
     isAchievementsLoading,
     isChallengesLoading,
     isEventsLoading,
+    isInvitationsLoading,
     loadAchievements,
     loadChallenges,
     loadEvents,
+    loadInvitations,
     resetDashboardData,
     setChallenges,
     setChallengesError,
     setEvents,
     setEventsError,
+    setInvitations,
+    setInvitationsError,
   } = useDashboardData();
   const [eventForm, setEventForm] = useState(initialEvent);
   const [isEventSubmitting, setIsEventSubmitting] = useState(false);
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [editingEventId, setEditingEventId] = useState(null);
   const [eventPendingDelete, setEventPendingDelete] = useState(null);
+  const [updatingInvitationId, setUpdatingInvitationId] = useState(null);
+  const [inviteForms, setInviteForms] = useState({});
+  const [submittingInviteEventId, setSubmittingInviteEventId] = useState(null);
   const [challengeForm, setChallengeForm] = useState(initialChallenge);
   const [progressForms, setProgressForms] = useState({});
   const [isChallengeSubmitting, setIsChallengeSubmitting] = useState(false);
@@ -57,6 +70,7 @@ export function useAuthExperienceDashboard({ accessToken }) {
 
   async function loadDashboard(accessTokenToLoad) {
     await loadEvents(accessTokenToLoad);
+    await loadInvitations(accessTokenToLoad);
     await loadChallenges(accessTokenToLoad);
     await loadAchievements(accessTokenToLoad);
   }
@@ -67,6 +81,9 @@ export function useAuthExperienceDashboard({ accessToken }) {
     setIsEventModalOpen(false);
     setEditingEventId(null);
     setEventPendingDelete(null);
+    setUpdatingInvitationId(null);
+    setInviteForms({});
+    setSubmittingInviteEventId(null);
     setChallengeForm(initialChallenge);
     setProgressForms({});
     setIsChallengeSubmitting(false);
@@ -96,6 +113,14 @@ export function useAuthExperienceDashboard({ accessToken }) {
     }));
   }
 
+  function updateInviteIdentifier(eventId, value) {
+    setEventsError("");
+    setInviteForms((current) => ({
+      ...current,
+      [eventId]: value,
+    }));
+  }
+
   function openCreateEventModal() {
     setEditingEventId(null);
     setEventForm(initialEvent);
@@ -110,6 +135,8 @@ export function useAuthExperienceDashboard({ accessToken }) {
       description: plannerEvent.description,
       starts_at: toDateTimeLocalValue(plannerEvent.starts_at),
       category: plannerEvent.category,
+      quest_mode: plannerEvent.quest_mode ?? "solo",
+      is_completed: Boolean(plannerEvent.is_completed),
     });
     setEventsError("");
     setIsEventModalOpen(true);
@@ -138,6 +165,8 @@ export function useAuthExperienceDashboard({ accessToken }) {
         description: eventForm.description,
         starts_at: new Date(eventForm.starts_at).toISOString(),
         category: eventForm.category,
+        quest_mode: eventForm.quest_mode,
+        is_completed: eventForm.is_completed,
       };
       const savedEvent = await authenticatedRequest(
         editingEventId ? `/events/${editingEventId}/` : "/events/",
@@ -180,11 +209,60 @@ export function useAuthExperienceDashboard({ accessToken }) {
     }
   }
 
+  async function handleInvitationResponse(invitationId, status) {
+    if (!accessToken) {
+      return;
+    }
+
+    setUpdatingInvitationId(invitationId);
+    setInvitationsError("");
+
+    try {
+      const updatedInvitation = await updateEventInvitation(invitationId, accessToken, status);
+      setInvitations((current) =>
+        current.map((invitation) => (invitation.id === updatedInvitation.id ? updatedInvitation : invitation)),
+      );
+      await loadEvents(accessToken);
+    } catch (invitationError) {
+      setInvitationsError(invitationError.message);
+    } finally {
+      setUpdatingInvitationId(null);
+    }
+  }
+
+  async function handleCreateInvitation(eventId) {
+    if (!accessToken) {
+      return;
+    }
+
+    const identifier = (inviteForms[eventId] ?? "").trim();
+    if (!identifier) {
+      setEventsError("Enter an email or username to invite.");
+      return;
+    }
+
+    setSubmittingInviteEventId(eventId);
+    setEventsError("");
+
+    try {
+      const createdInvitation = await createEventInvitation(eventId, accessToken, identifier);
+      setInvitations((current) => [...current, createdInvitation]);
+      setInviteForms((current) => ({
+        ...current,
+        [eventId]: "",
+      }));
+    } catch (invitationError) {
+      setEventsError(invitationError.message);
+    } finally {
+      setSubmittingInviteEventId(null);
+    }
+  }
+
   async function handleCreateChallenge(event) {
     event.preventDefault();
 
     if (!accessToken) {
-      return;
+      return null;
     }
 
     setIsChallengeSubmitting(true);
@@ -197,12 +275,19 @@ export function useAuthExperienceDashboard({ accessToken }) {
           title: challengeForm.title,
           description: challengeForm.description,
           deadline: challengeForm.deadline || null,
+          streak_goal_days: challengeForm.streak_goal_days ? Number(challengeForm.streak_goal_days) : null,
+          category_tags: challengeForm.category_tags
+            .split(",")
+            .map((tag) => tag.trim().toLowerCase())
+            .filter(Boolean),
         }),
       });
       setChallenges((current) => [createdChallenge, ...current]);
       setChallengeForm(initialChallenge);
+      return createdChallenge;
     } catch (challengeError) {
       setChallengesError(challengeError.message);
+      return null;
     } finally {
       setIsChallengeSubmitting(false);
     }
@@ -285,9 +370,14 @@ export function useAuthExperienceDashboard({ accessToken }) {
     eventPendingDelete,
     events,
     eventsError,
+    inviteForms,
+    invitations,
+    invitationsError,
     handleCompleteChallenge,
     handleCreateChallenge,
     handleDeleteEvent,
+    handleCreateInvitation,
+    handleInvitationResponse,
     handleLogProgress,
     handleSubmitEvent,
     isAchievementsLoading,
@@ -296,16 +386,21 @@ export function useAuthExperienceDashboard({ accessToken }) {
     isEventModalOpen,
     isEventSubmitting,
     isEventsLoading,
+    isInvitationsLoading,
+    submittingInviteEventId,
     loadAchievements,
     loadChallenges,
     loadDashboard,
     loadEvents,
+    loadInvitations,
     openCreateEventModal,
     openEditEventModal,
     progressForms,
     resetDashboardExperience,
     setEventPendingDelete,
     submittingProgressId,
+    updatingInvitationId,
+    updateInviteIdentifier,
     updateChallenge,
     updateEvent,
     updateProgress,

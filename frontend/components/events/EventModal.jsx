@@ -22,14 +22,14 @@ export default function EventModal({
         className="event-modal"
         role="dialog"
         aria-modal="true"
-        aria-label="Create event"
+        aria-label="Create event quest"
       >
         <div className="modal-header">
           <div>
             <p className="eyebrow">
-              {editingEventId ? "Update personal event" : "New personal event"}
+              {editingEventId ? "Update event quest" : "New event quest"}
             </p>
-            <h2>{editingEventId ? "Edit event" : "Create event"}</h2>
+            <h2>{editingEventId ? "Edit event quest" : "Create event quest"}</h2>
           </div>
           <button
             type="button"
@@ -61,6 +61,17 @@ export default function EventModal({
             />
           </label>
           <label>
+            Quest mode
+            <select
+              name="quest_mode"
+              value={eventForm.quest_mode}
+              onChange={onChange}
+            >
+              <option value="solo">Solo</option>
+              <option value="group">Group</option>
+            </select>
+          </label>
+          <label>
             Category
             <select
               name="category"
@@ -83,13 +94,30 @@ export default function EventModal({
               required
             />
           </label>
+          {editingEventId ? (
+            <label>
+              <input
+                name="is_completed"
+                type="checkbox"
+                checked={eventForm.is_completed}
+                onChange={(event) =>
+                  onChange({
+                    target: {
+                      name: "is_completed",
+                      value: event.target.checked,
+                    },
+                  })}
+              />
+              Mark as completed
+            </label>
+          ) : null}
           {eventsError && <p className="form-error">{eventsError}</p>}
           <button type="submit" disabled={isEventSubmitting}>
             {isEventSubmitting
               ? "Saving..."
               : editingEventId
                 ? "Save changes"
-                : "Create event"}
+                : "Create event quest"}
           </button>
         </form>
       </section>

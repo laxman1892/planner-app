@@ -10,11 +10,11 @@ import {
 } from "./auth-screen-content.js";
 
 test("getAuthHeading returns the login copy for login mode", () => {
-  assert.equal(getAuthHeading("login"), "Log in to your planner");
+  assert.equal(getAuthHeading("login"), "Welcome back, adventurer");
 });
 
 test("getAuthHeading returns the register copy for register mode", () => {
-  assert.equal(getAuthHeading("register"), "Create your planner profile");
+  assert.equal(getAuthHeading("register"), "Create an account");
 });
 
 test("authPreviewItems preserves the auth marketing cards in order", () => {
@@ -24,19 +24,19 @@ test("authPreviewItems preserves the auth marketing cards in order", () => {
       {
         key: "streak",
         icon: "sparkles",
-        label: "Challenge streak",
-        value: "5 days",
+        label: "Active streak",
+        value: "5 days strong",
       },
       {
         key: "plan",
         icon: "calendar",
-        label: "Next shared plan",
-        value: "Design review",
+        label: "Next quest",
+        value: "Design review at 10:30",
       },
       {
         key: "badge",
         icon: "medal",
-        label: "Latest badge",
+        label: "Latest achievement",
         value: "Planner Starter",
       },
     ],

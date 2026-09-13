@@ -1,6 +1,6 @@
 export const dashboardNavigationItems = [
   { href: "/dashboard", label: "Dashboard", section: "dashboard" },
-  { href: "/events", label: "Events", section: "events" },
+  { href: "/events", label: "Planner", section: "events" },
   { href: "/challenges", label: "Challenges", section: "challenges" },
   { href: "/profile", label: "Profile", section: "profile" },
 ];

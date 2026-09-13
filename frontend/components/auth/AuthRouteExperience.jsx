@@ -7,7 +7,7 @@ import AuthScreen from "@/components/auth/AuthScreen";
 import { useAuthFlow } from "@/hooks/useAuthFlow";
 import { useAuthenticatedUserSession } from "@/hooks/useAuthenticatedUserSession";
 
-export default function AuthRouteExperience({ initialMode, initialSuccessMessage = "" }) {
+export default function AuthRouteExperience({ initialMode, initialSuccessMessage = "", visualVariant = "login" }) {
   const router = useRouter();
   const session = useAuthenticatedUserSession();
   const authFlow = useAuthFlow({
@@ -35,5 +35,5 @@ export default function AuthRouteExperience({ initialMode, initialSuccessMessage
     return null;
   }
 
-  return <AuthScreen {...authFlow.authScreenProps} onModeChange={handleAuthModeChange} />;
+  return <AuthScreen {...authFlow.authScreenProps} onModeChange={handleAuthModeChange} visualVariant={visualVariant} />;
 }
