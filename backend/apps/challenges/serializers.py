@@ -50,6 +50,7 @@ class ChallengeProgressSerializer(serializers.ModelSerializer):
 class ChallengeSerializer(serializers.ModelSerializer):
     creator = UserSerializer(read_only=True)
     progress_logs = ChallengeProgressSerializer(many=True, read_only=True)
+    reward_preview_xp = serializers.SerializerMethodField()
 
     class Meta:
         model = Challenge
@@ -59,12 +60,15 @@ class ChallengeSerializer(serializers.ModelSerializer):
             "title",
             "description",
             "deadline",
+            "streak_goal_days",
+            "category_tags",
+            "reward_preview_xp",
             "challenge_type",
             "is_completed",
             "progress_logs",
             "created_at",
         ]
-        read_only_fields = ["id", "creator", "challenge_type", "is_completed", "created_at"]
+        read_only_fields = ["id", "creator", "reward_preview_xp", "challenge_type", "is_completed", "created_at"]
         extra_kwargs = {
             "description": {"required": True, "allow_blank": False},
         }
@@ -74,3 +78,8 @@ class ChallengeSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"challenge_type": "Only self challenges are supported in MVP."})
 
         return attrs
+
+    def get_reward_preview_xp(self, obj):
+        from .services import get_reward_preview_xp
+
+        return get_reward_preview_xp(obj.streak_goal_days)

@@ -3,7 +3,7 @@ from rest_framework import permissions, viewsets
 from .models import Event, EventParticipant
 from .permissions import IsEventOwnerOrReadOnly, IsInvitationCreatorOrInviteeReadOnly
 from .serializers import EventParticipantSerializer, EventSerializer
-from .services import visible_event_participants_for_user, visible_events_for_user
+from .services import notify_invitation_response, visible_event_participants_for_user, visible_events_for_user
 
 
 class EventViewSet(viewsets.ModelViewSet):
@@ -26,3 +26,7 @@ class EventParticipantViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save()
+
+    def perform_update(self, serializer):
+        invitation = serializer.save()
+        notify_invitation_response(invitation)

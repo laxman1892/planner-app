@@ -28,6 +28,8 @@ INSTALLED_APPS = [
     "apps.planner",
     "apps.challenges",
     "apps.achievements",
+    "apps.notifications",
+    "apps.progression",
 ]
 
 MIDDLEWARE = [
@@ -84,6 +86,10 @@ USE_TZ = True
 STATIC_URL = "static/"
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "no-reply@planquest.local")
+NOTIFICATION_EMAIL_RETRY_LIMIT = int(os.getenv("NOTIFICATION_EMAIL_RETRY_LIMIT", "3"))
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

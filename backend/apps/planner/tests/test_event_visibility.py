@@ -1,7 +1,8 @@
-from datetime import datetime, timezone as datetime_timezone
+from datetime import datetime, timedelta, timezone as datetime_timezone
 
 from django.contrib.auth import get_user_model
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -52,7 +53,56 @@ class EventVisibilityTests(APITestCase):
         self.assertEqual(response.data["title"], "Morning planning")
         self.assertEqual(response.data["category"], "work")
         self.assertEqual(response.data["creator"]["email"], self.user.email)
+        self.assertEqual(response.data["quest_mode"], "solo")
+        self.assertFalse(response.data["is_completed"])
         self.assertEqual(Event.objects.get().creator, self.user)
+
+    def test_creator_can_mark_event_completed(self):
+        event = self.create_event(self.user)
+        self.client.force_authenticate(self.user)
+
+        response = self.client.patch(
+            reverse("event-detail", args=[event.id]),
+            {"is_completed": True},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data["is_completed"])
+        event.refresh_from_db()
+        self.assertTrue(event.is_completed)
+
+    def test_completed_event_is_still_visible_in_list(self):
+        event = self.create_event(self.user, title="Completed quest")
+        event.is_completed = True
+        event.save(update_fields=["is_completed"])
+        self.client.force_authenticate(self.user)
+
+        response = self.client.get(reverse("event-list"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["title"], "Completed quest")
+        self.assertTrue(response.data[0]["is_completed"])
+
+    def test_user_can_create_group_mode_event(self):
+        self.client.force_authenticate(self.user)
+
+        response = self.client.post(
+            reverse("event-list"),
+            {
+                "title": "Team sync",
+                "description": "Coordinate with the team",
+                "starts_at": "2026-05-01T09:00:00Z",
+                "category": "work",
+                "quest_mode": "group",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["quest_mode"], "group")
+        self.assertEqual(Event.objects.get().quest_mode, "group")
 
     def test_description_is_required_for_personal_event(self):
         self.client.force_authenticate(self.user)
@@ -109,6 +159,21 @@ class EventVisibilityTests(APITestCase):
     def test_declined_participant_cannot_see_event(self):
         event = self.create_event(self.other_user, title="Declined share")
         self.invite_user(event, self.user, status=EventParticipant.Status.DECLINED)
+        self.client.force_authenticate(self.user)
+
+        list_response = self.client.get(reverse("event-list"))
+        detail_response = self.client.get(reverse("event-detail", args=[event.id]))
+
+        self.assertEqual(list_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(list_response.data, [])
+        self.assertEqual(detail_response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_expired_participant_cannot_see_event(self):
+        event = self.create_event(self.other_user, title="Expired share")
+        invitation = self.invite_user(event, self.user, status=EventParticipant.Status.PENDING)
+        EventParticipant.objects.filter(id=invitation.id).update(
+            invited_at=timezone.now() - timedelta(hours=13)
+        )
         self.client.force_authenticate(self.user)
 
         list_response = self.client.get(reverse("event-list"))

@@ -1,10 +1,12 @@
-from datetime import datetime, timezone as datetime_timezone
+from datetime import datetime, timedelta, timezone as datetime_timezone
 
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from apps.notifications.models import Notification
 from apps.planner.models import Event, EventParticipant
 
 User = get_user_model()
@@ -66,6 +68,52 @@ class EventInvitationTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("event", response.data)
 
+    def test_event_creator_can_invite_by_email_identifier(self):
+        self.client.force_authenticate(self.creator)
+
+        response = self.client.post(
+            reverse("event-participant-list"),
+            {
+                "event": self.event.id,
+                "identifier": self.invited_user.email,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["user"], self.invited_user.id)
+        self.assertEqual(response.data["status"], EventParticipant.Status.PENDING)
+
+    def test_event_creator_can_invite_by_username_identifier(self):
+        self.client.force_authenticate(self.creator)
+
+        response = self.client.post(
+            reverse("event-participant-list"),
+            {
+                "event": self.event.id,
+                "identifier": self.invited_user.username,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["user"], self.invited_user.id)
+
+    def test_invite_by_identifier_rejects_unknown_user(self):
+        self.client.force_authenticate(self.creator)
+
+        response = self.client.post(
+            reverse("event-participant-list"),
+            {
+                "event": self.event.id,
+                "identifier": "missing-user",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("identifier", response.data)
+
     def test_creator_cannot_invite_same_user_twice(self):
         EventParticipant.objects.create(event=self.event, user=self.invited_user)
         self.client.force_authenticate(self.creator)
@@ -116,3 +164,98 @@ class EventInvitationTests(APITestCase):
         response = self.client.get(reverse("event-participant-detail", args=[invitation.id]))
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_invited_user_can_view_limited_preview_fields(self):
+        invitation = EventParticipant.objects.create(event=self.event, user=self.invited_user)
+        self.client.force_authenticate(self.invited_user)
+
+        response = self.client.get(reverse("event-participant-detail", args=[invitation.id]))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["status"], EventParticipant.Status.PENDING)
+        self.assertEqual(response.data["event_preview"]["title"], self.event.title)
+        self.assertEqual(response.data["event_preview"]["category"], self.event.category)
+        self.assertEqual(response.data["event_preview"]["starts_at"], self.event.starts_at.isoformat().replace("+00:00", "Z"))
+        self.assertEqual(response.data["creator_detail"]["id"], self.creator.id)
+        self.assertEqual(response.data["creator_detail"]["username"], self.creator.username)
+        self.assertNotIn("description", response.data["event_preview"])
+
+    def test_expired_invitation_cannot_be_accepted(self):
+        invitation = EventParticipant.objects.create(event=self.event, user=self.invited_user)
+        EventParticipant.objects.filter(id=invitation.id).update(
+            invited_at=timezone.now() - timedelta(hours=13)
+        )
+        self.client.force_authenticate(self.invited_user)
+
+        response = self.client.patch(
+            reverse("event-participant-detail", args=[invitation.id]),
+            {"status": EventParticipant.Status.ACCEPTED},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        invitation.refresh_from_db()
+        self.assertEqual(invitation.status, EventParticipant.Status.EXPIRED)
+
+    def test_expired_invitation_cannot_be_declined(self):
+        invitation = EventParticipant.objects.create(event=self.event, user=self.invited_user)
+        EventParticipant.objects.filter(id=invitation.id).update(
+            invited_at=timezone.now() - timedelta(hours=13)
+        )
+        self.client.force_authenticate(self.invited_user)
+
+        response = self.client.patch(
+            reverse("event-participant-detail", args=[invitation.id]),
+            {"status": EventParticipant.Status.DECLINED},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        invitation.refresh_from_db()
+        self.assertEqual(invitation.status, EventParticipant.Status.EXPIRED)
+
+    def test_create_invitation_creates_notification_for_invitee(self):
+        self.client.force_authenticate(self.creator)
+
+        response = self.client.post(
+            reverse("event-participant-list"),
+            {
+                "event": self.event.id,
+                "identifier": self.invited_user.email,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        notification = Notification.objects.get(user=self.invited_user, type="invite_sent")
+        self.assertEqual(notification.title, "New event quest invitation")
+
+    def test_accepting_invitation_creates_notification_for_creator(self):
+        invitation = EventParticipant.objects.create(event=self.event, user=self.invited_user)
+        self.client.force_authenticate(self.invited_user)
+
+        response = self.client.patch(
+            reverse("event-participant-detail", args=[invitation.id]),
+            {"status": EventParticipant.Status.ACCEPTED},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(
+            Notification.objects.filter(user=self.creator, type="invite_accepted").exists()
+        )
+
+    def test_declining_invitation_creates_notification_for_creator(self):
+        invitation = EventParticipant.objects.create(event=self.event, user=self.invited_user)
+        self.client.force_authenticate(self.invited_user)
+
+        response = self.client.patch(
+            reverse("event-participant-detail", args=[invitation.id]),
+            {"status": EventParticipant.Status.DECLINED},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(
+            Notification.objects.filter(user=self.creator, type="invite_declined").exists()
+        )

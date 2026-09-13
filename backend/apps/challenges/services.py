@@ -13,6 +13,17 @@ def visible_progress_for_user(user):
     return ChallengeProgress.objects.filter(user=user, challenge__creator=user)
 
 
+def active_challenges_for_reminders():
+    return Challenge.objects.filter(is_completed=False).select_related("creator")
+
+
+def get_reward_preview_xp(streak_goal_days):
+    if not streak_goal_days:
+        return 100
+
+    return max(100, int(streak_goal_days) * 10)
+
+
 def create_self_challenge(*, creator, **validated_data):
     return Challenge.objects.create(
         creator=creator,

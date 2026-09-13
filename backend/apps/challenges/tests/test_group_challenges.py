@@ -137,3 +137,53 @@ class GroupChallengePolicyTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data["challenge_type"], Challenge.ChallengeType.SELF)
+
+    def test_challenge_supports_streak_goal(self):
+        self.client.force_authenticate(self.user)
+
+        response = self.client.post(
+            reverse("challenge-list"),
+            {
+                "title": "Code meditation",
+                "description": "Stay consistent for thirty days.",
+                "deadline": "2026-06-30",
+                "streak_goal_days": 30,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["streak_goal_days"], 30)
+
+    def test_challenge_supports_category_tags(self):
+        self.client.force_authenticate(self.user)
+
+        response = self.client.post(
+            reverse("challenge-list"),
+            {
+                "title": "Code meditation",
+                "description": "Stay consistent for thirty days.",
+                "category_tags": ["learning", "mindfulness"],
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["category_tags"], ["learning", "mindfulness"])
+
+    def test_challenge_reward_preview_has_stable_value(self):
+        self.client.force_authenticate(self.user)
+
+        response = self.client.post(
+            reverse("challenge-list"),
+            {
+                "title": "Code meditation",
+                "description": "Stay consistent for thirty days.",
+                "streak_goal_days": 30,
+                "category_tags": ["learning"],
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["reward_preview_xp"], 300)

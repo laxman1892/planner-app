@@ -12,6 +12,8 @@ class Challenge(models.Model):
     title = models.CharField(max_length=160)
     description = models.TextField(blank=True)
     deadline = models.DateField(blank=True, null=True)
+    streak_goal_days = models.PositiveIntegerField(blank=True, null=True)
+    category_tags = models.JSONField(default=list, blank=True)
     challenge_type = models.CharField(max_length=20, choices=ChallengeType.choices, default=ChallengeType.SELF)
     is_completed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
